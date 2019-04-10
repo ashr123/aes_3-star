@@ -1,5 +1,5 @@
 <component name="ArtifactManager">
-  <artifact type="jar" name="aes:jar">
+  <artifact type="jar" build-on-make="true" name="aes:jar">
     <output-path>$PROJECT_DIR$</output-path>
     <root id="archive" name="aes.jar">
       <element id="module-output" name="aes" />
