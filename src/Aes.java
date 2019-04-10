@@ -1,4 +1,4 @@
-public final class aes
+public final class Aes
 {
 	public static void main(final String[] args)
 	{
