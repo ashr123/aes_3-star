@@ -173,7 +173,6 @@ public final class Aes
 
 		final List<String> argsList=Arrays.asList(args);
 		final File file1, file2, file3=new File(args[argsList.indexOf("-o")+1]);
-		;
 		if (args[0].equals("-e") || args[0].equals("-d"))
 		{
 			file1=new File(args[argsList.indexOf("-k")+1]);
