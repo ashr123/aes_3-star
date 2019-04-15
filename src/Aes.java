@@ -110,7 +110,12 @@ public final class Aes
 			rotate(msg[i], isToTheLeft ? -i : i);
 	}
 
-
+	/**
+	 * Writes a matrix of bytes to file.
+	 * @param outputFile The file to be written
+	 * @param input The matrix.
+	 * @throws IOException If any problem occurs with the writing of with the file.
+	 */
 	private static void writeMatrixToFile(final File outputFile, final byte[][][] input) throws IOException
 	{
 		try (FileOutputStream fileOutputStream=new FileOutputStream(outputFile, true))
