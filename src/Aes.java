@@ -1,13 +1,26 @@
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 public final class Aes
 {
+	/**
+	 * Transposes a matrix of bytes.
+	 *
+	 * @param arr The bytes matrix.
+	 */
+	private static void transpose(final byte[][] arr)
+	{
+		for (int i=0; i<arr.length; i++)
+			for (int j=0; j<arr[i].length; j++)
+			{
+				final byte temp=arr[j][i];
+				arr[j][i]=arr[i][j];
+				arr[i][j]=temp;
+			}
+	}
+
 	/**
 	 * @param arr the array to be set
 	 * @see java.util.ArrayList#set(int, Object)
@@ -49,7 +62,7 @@ public final class Aes
 	}
 
 	/**
-	 * Reads a file's data by bytes and saving it's byte in a matrices of 4x4 (a block of 16 bytes).
+	 * Reads a file's data by bytes and saving it's bytes in a matrices of 4x4 (a block of 16 bytes).
 	 *
 	 * @param file the file to be read.
 	 * @return a 3 dimensional matrix of data like so: numberOfBlocks x 4 x 4.
@@ -59,13 +72,15 @@ public final class Aes
 	{
 		try (FileInputStream fileInputStream=new FileInputStream(file))
 		{
-			final int numOfBlocks=(int) file.length()/16; // for separating to blocks of 128 bits (128 bits=16 bytes)
-			final byte[][][] data=new byte[numOfBlocks][4][4];
-			for (int i=0; i<numOfBlocks; i++)
-				for (int j=0; j<data.length; j++)
-					if (fileInputStream.read(data[i][j])==-1)
+			final byte[][][] data=new byte[(int) file.length()/16][4][4];// for separating to blocks of 128 bits (128 bits=16 bytes)
+			for (final byte[][] block : data)
+			{
+				for (final byte[] line : block)
+					if (fileInputStream.read(line)==-1)
 						throw new IOException(
 								"Not enough bytes for hole block of 16 bytes in file "+file.getName()+"! (num of bytes: "+file.length()+')');
+				transpose(block); // from lines to columns
+			}
 			return data;
 		}
 	}
@@ -86,13 +101,27 @@ public final class Aes
 	/**
 	 * Shifts every line right or left by it's line number.
 	 *
-	 * @param msg          The original message.
-	 * @param isToTheRight If {@code true}, shifts to the right, else, shifts to the left.
+	 * @param msg         The original message.
+	 * @param isToTheLeft If {@code true}, shifts to the left, else, shifts to the right.
 	 */
-	private static void shiftRows(final byte[][] msg, final boolean isToTheRight)
+	private static void shiftRows(final byte[][] msg, final boolean isToTheLeft)
 	{
-		for (int i=0; i<msg.length; i++)
-			rotate(msg[i], isToTheRight ? i : -i);
+		for (final byte[] line : msg)
+			rotate(line, isToTheLeft ? -i : i);
+	}
+
+
+	private static void rightMatrixToFile(final File outputFile, final byte[][][] input) throws IOException
+	{
+		try (FileOutputStream fileOutputStream=new FileOutputStream(outputFile, true))
+		{
+			for (final byte[][] block : input)
+			{
+				transpose(block); // from columns to lines (for convenience)
+				for (final byte[] line : block)
+					fileOutputStream.write(line);
+			}
+		}
 	}
 
 	/**
@@ -103,7 +132,8 @@ public final class Aes
 	 * @param outputFile The result of the encryption, a cipher file.
 	 * @throws IOException If there is an error concerning any of the files.
 	 */
-	private static void encrypt(final File keysFile, final File inputFile, final File outputFile) throws IOException
+	private static void encryptOrDecrypt(final File keysFile, final File inputFile, final File outputFile,
+	                                     final boolean isDecrypting) throws IOException
 	{
 		final byte[][][]
 				keys=readFile(keysFile),
@@ -113,26 +143,20 @@ public final class Aes
 		if (!outputFile.createNewFile())
 			throw new IOException("Can't create new file with name: "+outputFile.getName());
 
-	}
-
-	/**
-	 * Decrypts a file with AES-3-star algorithm.
-	 *
-	 * @param keysFile   A key file, should contain 3 keys 16 bytes long.
-	 * @param inputFile  An input file, an original message, it's size (in bytes) is a multiplication of 16.
-	 * @param outputFile The result of the encryption, a cipher file.
-	 * @throws IOException If there is an error concerning any of the files.
-	 */
-	private static void decrypt(final File keysFile, final File inputFile, final File outputFile) throws IOException
-	{
-		final byte[][][]
-				keys=readFile(keysFile),
-				input=readFile(inputFile);
-		//		if (!outputFile.delete())
-		//			throw new IOException("can't delete "+outputFile.getName());
-		if (!outputFile.createNewFile())
-			throw new IOException("Can't create new file with name: "+outputFile.getName());
-
+		for (final byte[][] block : input)
+			if (isDecrypting)
+				for (final byte[][] key : keys)
+				{
+					shiftRows(block, true);
+					addRoundKey(block, key);
+				}
+			else
+				for (int i=keys.length; i >= 0; i--)
+				{
+					addRoundKey(block, keys[i]);
+					shiftRows(block, false);
+				}
+		rightMatrixToFile(outputFile, input);
 	}
 
 	public static void main(final String[] args) throws IOException
@@ -163,10 +187,10 @@ public final class Aes
 		switch (args[0])
 		{
 			case "-e":
-				encrypt(file1, file2, file3);
+				encryptOrDecrypt(file1, file2, file3, true);
 				break;
 			case "-d":
-				decrypt(file1, file2, file3);
+				encryptOrDecrypt(file1, file2, file3, false);
 				break;
 			case "-b":
 
