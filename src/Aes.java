@@ -1,8 +1,4 @@
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -110,8 +106,8 @@ public final class Aes
 	 */
 	private static void shiftRows(final byte[][] msg, final boolean isToTheLeft)
 	{
-		for (final byte[] line : msg)
-			rotate(line, isToTheLeft ? -i : i);
+		for (int i=0; i<msg.length; i++)
+			rotate(msg[i], isToTheLeft ? -i : i);
 	}
 
 
@@ -142,8 +138,8 @@ public final class Aes
 		final byte[][][]
 				keys=readFile(keysFile),
 				input=readFile(inputFile);
-		//		if (!outputFile.delete())
-		//			throw new IOException("can't delete "+outputFile.getName());
+				if (!outputFile.delete())
+					throw new IOException("can't delete "+outputFile.getName());
 		if (!outputFile.createNewFile())
 			throw new IOException("Can't create new file with name: "+outputFile.getName());
 
