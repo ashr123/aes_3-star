@@ -1,4 +1,8 @@
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -64,9 +68,9 @@ public final class Aes
 	/**
 	 * Reads a file's data by bytes and saving it's bytes in a matrices of 4x4 (a block of 16 bytes).
 	 *
-	 * @param file the file to be read.
-	 * @return a 3 dimensional matrix of data like so: numberOfBlocks x 4 x 4.
-	 * @throws IOException if any error related to reading or parsing the file happens.
+	 * @param file The file to be read.
+	 * @return A 3 dimensional matrix of data like so: numberOfBlocks x 4 x 4.
+	 * @throws IOException If any error related to reading or parsing the file happens.
 	 */
 	private static byte[][][] readFile(final File file) throws IOException
 	{
@@ -111,7 +115,7 @@ public final class Aes
 	}
 
 
-	private static void rightMatrixToFile(final File outputFile, final byte[][][] input) throws IOException
+	private static void writeMatrixToFile(final File outputFile, final byte[][][] input) throws IOException
 	{
 		try (FileOutputStream fileOutputStream=new FileOutputStream(outputFile, true))
 		{
@@ -133,7 +137,7 @@ public final class Aes
 	 * @throws IOException If there is an error concerning any of the files.
 	 */
 	private static void encryptOrDecrypt(final File keysFile, final File inputFile, final File outputFile,
-	                                     final boolean isDecrypting) throws IOException
+	                                     final boolean isEncrypting) throws IOException
 	{
 		final byte[][][]
 				keys=readFile(keysFile),
@@ -144,7 +148,7 @@ public final class Aes
 			throw new IOException("Can't create new file with name: "+outputFile.getName());
 
 		for (final byte[][] block : input)
-			if (isDecrypting)
+			if (isEncrypting)
 				for (final byte[][] key : keys)
 				{
 					shiftRows(block, true);
@@ -156,7 +160,7 @@ public final class Aes
 					addRoundKey(block, keys[i]);
 					shiftRows(block, false);
 				}
-		rightMatrixToFile(outputFile, input);
+		writeMatrixToFile(outputFile, input);
 	}
 
 	public static void main(final String[] args) throws IOException
